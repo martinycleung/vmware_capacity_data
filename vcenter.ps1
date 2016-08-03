@@ -676,7 +676,7 @@ ForEach ($ClusterTemp in ($Clusters)){
 
 
 ########################### Outpu JSON #################################
-Write-Output $json | ConvertTo-Json -Depth 5 | Out-File ((Get-Location).Path + "\report.json"
+Write-Output $json | ConvertTo-Json -Depth 5 | Out-File ((Get-Location).Path + "\report.json")
 Write-Host "Report has exported to " + ((Get-Location).Path + "\report.json")
 
 
