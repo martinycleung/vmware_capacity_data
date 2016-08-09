@@ -1,7 +1,7 @@
 ############################# INFORMATION #######################################
 # VMWare Capacity & Performance Report
 # Marc Vincent Davoli (Find me on LinkedIn! http://ca.linkedin.com/in/marcvincentdavoli/)
-# PREREQUISITES for this script: Powershell V2, PowerCLI 5.0, Microsoft Chart Controls for .NET Framework (download from this link:
+# PREREQUISITES for this script: Powershell V2, PowerCLI 5.0, Microsoft Chart Controls for .NET Framework (download from this link: 
 # http://www.microsoft.com/en-us/download/details.aspx?id=14422)
 # INPUT for this script: vCenter server IP/hostname, vCenter server credentials, SMTP server IP/hostname
 # OUTPUT for this script: E-mailed Report, Report.HTML and Attachments, 1 for each chart (in the working directory)
@@ -22,7 +22,7 @@ Write-Host Loading...
 
 #-------------------------CHANGE THESE VALUES--------------------------------
 $SMTPServer = ""
-$vCenterServerName = ""
+$vCenterServerName = "" 
 #-----------------------------------------------------------------------------
 
 $ScriptVersion = "v2.1 - Community Edition" # Included in the Runtime info in $HTMLFooter
@@ -32,7 +32,7 @@ $ScriptVersion = "v2.1 - Community Edition" # Included in the Runtime info in $H
 
 $global:ArrayOfNames = @()
 $global:ArrayOfValues = @()
-$Attachments = @()
+$send = @()
 $json = @{}
 
 ############################## PREPROCESSING ####################################
@@ -107,8 +107,8 @@ Function GetVMHostAverageCPUUsagePercentage ($vmhosttemp) { #For the last 30 day
 
 	$AverageCPUUsagePercentage = Get-Stat -Entity ($vmhosttemp)-start (get-date).AddDays(-30) -Finish (Get-Date)-MaxSamples 31 -stat cpu.usage.average
 	$AverageCPUUsagePercentage = $AverageCPUUsagePercentage | Measure-Object -Property value -Average
-	$AverageCPUUsagePercentage = $AverageCPUUsagePercentage.Average
-	$AverageCPUUsagePercentage = [system.math]::ceiling($AverageCPUUsagePercentage) # Round up
+	$AverageCPUUsagePercentage = $AverageCPUUsagePercentage.Average/100
+	$AverageCPUUsagePercentage = [system.math]::round($AverageCPUUsagePercentage, 2)
 	return $AverageCPUUsagePercentage
 }
 
@@ -116,8 +116,8 @@ Function GetVMHostAverageMemoryUsagePercentage ($vmhosttemp) { #For the last 30 
 
 	$AverageMemoryUsagePercentage = Get-Stat -Entity ($vmhosttemp)-start (get-date).AddDays(-30) -Finish (Get-Date)-MaxSamples 31 -stat mem.usage.average
 	$AverageMemoryUsagePercentage = $AverageMemoryUsagePercentage | Measure-Object -Property value -Average
-	$AverageMemoryUsagePercentage = $AverageMemoryUsagePercentage.Average
-	$AverageMemoryUsagePercentage = [system.math]::ceiling($AverageMemoryUsagePercentage) # Round up
+	$AverageMemoryUsagePercentage = $AverageMemoryUsagePercentage.Average/100
+	$AverageMemoryUsagePercentage = [system.math]::round($AverageMemoryUsagePercentage, 2)
 	return $AverageMemoryUsagePercentage
 }
 
@@ -126,7 +126,7 @@ Function GetDatastoreCurrentDiskSpaceUsagePercentage ($DatastoreTemp) {
 	$DatastoreFreeSpaceinMB = $DatastoreTemp.FreeSpaceMB -as [int]
 	$DatastoreCapacityinMB= $DatastoreTemp.CapacityMB -as [int]
 	$DatastoreCurrentDiskSpaceUsagePercentage = 100 - ($DatastoreFreeSpaceinMB / $DatastoreCapacityinMB *100)
-	$DatastoreCurrentDiskSpaceUsagePercentage = [system.math]::ceiling($DatastoreCurrentDiskSpaceUsagePercentage) # Round up
+	$DatastoreCurrentDiskSpaceUsagePercentage = [system.math]::round($DatastoreCurrentDiskSpaceUsagePercentage/100, 2)
 	return $DatastoreCurrentDiskSpaceUsagePercentage
 }
 
@@ -146,8 +146,8 @@ Function GetNumberofVMsInDatastore ($DatastoreTemp) {
 
 Function GetDatastoreAllocationPercentage ($DatastoreTemp) {
 	$DatastoreTemp = $DatastoreTemp | Get-View
-	$DSAllocationTemp = [math]::round(((($DatastoreTemp.Summary.Capacity - $DatastoreTemp.Summary.FreeSpace)`
-						+ $DatastoreTemp.Summary.Uncommitted)*100)/$DatastoreTemp.Summary.Capacity,0)
+	$DSAllocationTemp = [math]::round(((((($DatastoreTemp.Summary.Capacity - $DatastoreTemp.Summary.FreeSpace)`
+						+ $DatastoreTemp.Summary.Uncommitted)*100)/$DatastoreTemp.Summary.Capacity)/100),2)
 	return $DSAllocationTemp
 }
 
@@ -155,8 +155,8 @@ Function GetVMHostCurrentMemoryUsagePercentage ($vmhosttemp) {
 
 	$MemoryUsageinMhz = $vmhosttemp.MemoryUsageMB -as [int]
 	$MemoryTotalinMhz = $vmhosttemp.MemoryTotalMB -as [int]
-	$MemoryUsagePercentage = $MemoryUsageinMhz / $MemoryTotalinMhz *100
-	$MemoryUsagePercentage = [system.math]::ceiling($MemoryUsagePercentage) # Round up
+	$MemoryUsagePercentage = $MemoryUsageinMhz / $MemoryTotalinMhz
+	$MemoryUsagePercentage = [system.math]::round($MemoryUsagePercentage, 2) 
 	return $MemoryUsagePercentage
 }
 
@@ -165,23 +165,23 @@ Function GetVMHostCurrentCPUUsagePercentage ($vmhosttemp) {
 
 	$CPUUsageinMhz = $vmhosttemp.CpuUsageMhz -as [int]
 	$CPUTotalinMhz = $vmhosttemp.CpuTotalMhz -as [int]
-	$CPUUsagePercentage = $CPUUsageinMhz / $CPUTotalinMhz *100
-	$CPUUsagePercentage = [system.math]::ceiling($CPUUsagePercentage) # Round up
+	$CPUUsagePercentage = $CPUUsageinMhz / $CPUTotalinMhz
+	$CPUUsagePercentage = [system.math]::round($CPUUsagePercentage, 2)
 	return $CPUUsagePercentage
 }
 
 Function GetVMAverageCPUUsage ($VMsTemp) {
-
+	
 	$AverageVMCPUUsage = Get-Stat -Entity ($VMsTemp) -MaxSamples 1 -stat cpu.usagemhz.average
 	$AverageVMCPUUsage = $AverageVMCPUUsage | Measure-Object -Property value -Average
-	$AverageVMCPUUsage = $AverageVMCPUUsage.Average
+	$AverageVMCPUUsage = $AverageVMCPUUsage.Average	
 	#$AverageVMCPUUsage = $AverageVMCPUUsage / 1000 # Divide by 1000 to convert from MHz to GHz # VALUE NOT HIGH ENOUGH
 	$AverageVMCPUUsage = [system.math]::ceiling($AverageVMCPUUsage) # Round up
 	return $AverageVMCPUUsage
 }
 
 Function GetVMAverageMemoryUsage ($VMsTemp) {
-
+	
 	$TotalVMMemoryinMB = $VMsTemp | Measure-Object -Property MemoryMB -Sum # Count total RAM in MB
 	$TotalVMMemoryinMB = $TotalVMMemoryinMB.Sum -as [int] # Convert from String to Int
 	#$TotalVMMemoryinGB = $TotalVMMemoryinMB / 1024 # Divide by 1024 to convert from MB to GB # VALUE NOT HIGH ENOUGH
@@ -191,7 +191,7 @@ Function GetVMAverageMemoryUsage ($VMsTemp) {
 }
 
 Function GetVMAverageDatastoreUsage ($VMsTemp) {
-
+	
 	$TotalVMProvisionedSpaceinGB = $VMsTemp | Measure-Object -Property ProvisionedSpaceGB -Sum # Count total RAM in MB
 	$TotalVMProvisionedSpaceinGB = $TotalVMProvisionedSpaceinGB.Sum -as [int] # Convert from String to Int
 	$VMAverageDatastoreUsage = $TotalVMProvisionedSpaceinGB / $VMsTemp.Length # Divide by number of VMs
@@ -215,9 +215,9 @@ Function GetVMTotalCPUs ($VMsTemp) {
 
 
 Function GetCPUSlotsAvailable ($VMHostsInClusterTemp, $ClusterVMAverageCPUUsageTemp) {
-
-	$VMHostsTotalCPUMhz = $VMHostsInClusterTemp | Measure-Object -Property CpuTotalMhz -Sum
-	$VMHostsUsedCPUMhz = $VMHostsInClusterTemp | Measure-Object -Property CpuUsageMhz -Sum
+	
+	$VMHostsTotalCPUMhz = $VMHostsInClusterTemp | Measure-Object -Property CpuTotalMhz -Sum 
+	$VMHostsUsedCPUMhz = $VMHostsInClusterTemp | Measure-Object -Property CpuUsageMhz -Sum 
 	$VMHostsTotalCPUMhz = $VMHostsTotalCPUMhz.Sum * 0.90 # Keep 10% available for best practice
 	$VMHostsUsedCPUMhz = $VMHostsUsedCPUMhz.Sum
 	$VMHostsAvailableCPUMhz = $VMHostsTotalCPUMhz - $VMHostsUsedCPUMhz
@@ -229,9 +229,9 @@ Function GetCPUSlotsAvailable ($VMHostsInClusterTemp, $ClusterVMAverageCPUUsageT
 
 
 Function GetMemorySlotsAvailable ($VMHostsInClusterTemp, $ClusterVMAverageMemoryUsageTemp) {
-
-	$VMHostsTotalMemoryMB = $VMHostsInClusterTemp | Measure-Object -Property MemoryTotalMB -Sum
-	$VMHostsUsedMemoryMB = $VMHostsInClusterTemp | Measure-Object -Property MemoryUsageMB -Sum
+	
+	$VMHostsTotalMemoryMB = $VMHostsInClusterTemp | Measure-Object -Property MemoryTotalMB -Sum 
+	$VMHostsUsedMemoryMB = $VMHostsInClusterTemp | Measure-Object -Property MemoryUsageMB -Sum 
 	$VMHostsTotalMemoryMB = $VMHostsTotalMemoryMB.Sum * 0.90 # Keep 10% available for best practice
 	$VMHostsUsedMemoryMB = $VMHostsUsedMemoryMB.Sum
 	$VMHostsAvailableMemoryMB = $VMHostsTotalMemoryMB - $VMHostsUsedMemoryMB
@@ -242,13 +242,13 @@ Function GetMemorySlotsAvailable ($VMHostsInClusterTemp, $ClusterVMAverageMemory
 
 
 Function GetDatastoreSlotsAvailable ($DatastoresInClusterTemp, $ClusterVMAverageMemoryUsageTemp) {
-
+	
 	# Remove 5% of Datastore capacity for Best Practices
 	$DatastoreCapacityTemp = $DatastoresInClusterTemp | Measure-Object -Property CapacityMB -Sum
 	$DatastoreCapacityMinus5Percent = $DatastoreCapacity.Sum * 0.95
 	$5PercentOfDatastoreCapacity = $DatastoreCapacity.Sum - $DatastoreCapacityMinus5Percent
 	$DatastoreFreeSpaceMB = $DatastoreFreeSpaceMB - $5PercentOfDatastoreCapacity
-
+	
 	$DatastoreFreeSpaceMB = $DatastoresInClusterTemp | Measure-Object -Property FreeSpaceMB -Sum
 	$DatastoreFreeSpaceMB = $DatastoreFreeSpaceMB.Sum / 1024 # Divide by 1024 to convert from MB to GB
 	$DatastoreFreeSpaceMB = $DatastoreFreeSpaceMB - $5PercentOfDatastoreCapacity # Keep 5% available for best practice
@@ -258,34 +258,33 @@ Function GetDatastoreSlotsAvailable ($DatastoresInClusterTemp, $ClusterVMAverage
 }
 
 Function GetVMProvisioningPotential ($CPUSLOTS, $MEMORYSLOTS, $DATASTORESLOTS) {
-
+	
 	if ($CPUSLOTS -le $MEMORYSLOTS -and  $CPUSLOTS -le $DATASTORESLOTS){ return ([String]$CPUSLOTS + ". CPU is your limiting factor.")}
 	if ($MEMORYSLOTS -le $CPUSLOTS -and  $MEMORYSLOTS -le $DATASTORESLOTS){ return ([String]$MEMORYSLOTS + ". Memory is your limiting factor.")}
 	if ($DATASTORESLOTS -le $CPUSLOTS -and  $DATASTORESLOTS -le $MEMORYSLOTS){ return ([String]$DATASTORESLOTS + ". Datastore Disk Space is your limiting factor.")}
-
+	
 }
 
 
 Function ListVCenterInventory () {
-
+	
 	$HostTemp = Get-VMHost | Select-Object -First 1
-
-	$metadata = @{}
+	
 	$version = (($HostTemp | Select-Object @{N="vCenterVersion";E={$global:DefaultVIServers | where {$_.Name.ToLower() -eq ($HostTemp.ExtensionData.Client.ServiceUrl.Split('/')[2]).ToLower()} | %{"$($_.Version) Build $($_.Build)"}   }}).vCenterVersion)
 
-	$metadata.version = [String]$version
-    $metadata.dc_count =  $DC.Count
-    $metadata.cluster_count = $Clusters.Count
-    $metadata.host_count = $VMHosts.Count
-    $metadata.total_cpu = [String](GetTotalCPUCyclesInGhz ($VMHosts)) + " GHz"
-    $metadata.cpu_count = (GetTotalNumberofCPUs ($VMHosts))
-    $metadata.total_ram = [String](GetTotalMemoryInGB ($VMHosts)) + " GB"
-    $metadata.vms_count = $VM.Count
-    $metadata.template_count = $Templates.Count
-    $metadata.recource_pool_count = $ResourcePools.Count
-    $metadata.consolidation_ratio = [String][system.math]::floor($VM.Count / $VMHosts.Count) + ":1"
-
-	return $metadata
+	$json.version = [String]$version
+    $json.dc_count =  $DC.Count
+    $json.cluster_count = $Clusters.Count
+    $json.host_count = $VMHosts.Count
+    $json.total_cpu = (GetTotalCPUCyclesInGhz ($VMHosts))
+    $json.cpu_count = (GetTotalNumberofCPUs ($VMHosts))
+    $json.total_ram = (GetTotalMemoryInGB ($VMHosts))
+    $json.vms_count = $VM.Count
+    $json.template_count = $Templates.Count
+    $json.recource_pool_count = $ResourcePools.Count
+    $json.consolidation_ratio = [String][system.math]::floor($VM.Count / $VMHosts.Count) + ":1"
+	
+	return $json
 }
 
 Function BuildESXiSoftwareAndHardwareInfoObj ($VMHostsTemp) {
@@ -299,12 +298,12 @@ Function BuildESXiSoftwareAndHardwareInfoObj ($VMHostsTemp) {
 		$tmp.host = $_.Name
 		$tmp.model = $_.Manufacturer + " " + $_.Model
 		$tmp.cpu_count = $_.NumCpu
-		$tmp.total_ram = [String](GetTotalMemoryInGB ($_)) + "GB"
+		$tmp.total_ram = (GetTotalMemoryInGB ($_))
 		$tmp.version = [String]$_.Version + " Build " + $_.Build
-		$tmp.uptime = [String]($_ | Get-View | select @{N="Uptime"; E={(Get-Date) - $_.Summary.Runtime.BootTime}}).Uptime.Days + " Days"
+		$tmp.uptime = ($_ | Get-View | select @{N="Uptime"; E={(Get-Date) - $_.Summary.Runtime.BootTime}}).Uptime.Days
 		$hardware += $tmp
 	}
-
+	
 	return $hardware
 }
 
@@ -314,27 +313,27 @@ Function BuildESXiSoftwareAndHardwareInfoObj ($VMHostsTemp) {
 Function ListClusterInventory ($ClusterTemp) {
 
 	Write-Host "          " Gathering $ClusterTemp.Name "inventory..."
-
+	
 	# Get inventory objects for this cluster only
 	$VMHostsTemp = Get-Cluster $ClusterTemp.Name | Get-VMHost | Sort-Object -Property Name #| Select-Object -First 1
 	$DatastoresTemp = Get-Cluster $ClusterTemp.Name | Get-VMHost | Get-Datastore | Sort-Object -Property Name #| Select-Object -First 1
 	$VMTemp = Get-Cluster $ClusterTemp.Name | Get-VM | Sort-Object -Property Name #| Select-Object -First 1
 	$ResourcePoolsTemp = Get-Cluster $ClusterTemp.Name | Get-ResourcePool | Sort-Object -Property Name #| Select-Object -First 1
-	$NbOfResourcePoolsTemp = $ResourcePoolsTemp | Measure-Object;
-
+	$NbOfResourcePoolsTemp = $ResourcePoolsTemp | Measure-Object; 
+	
 	$metadata = @{}
 
 	$metadata.host_count = $VMHostsTemp.Count
-    $metadata.total_cpu = [String](GetTotalCPUCyclesInGhz ($VMHostsTemp)) + " GHz"
+    $metadata.total_cpu = (GetTotalCPUCyclesInGhz ($VMHostsTemp))
     $metadata.cpu_count = (GetTotalNumberofCPUs ($VMHostsTemp))
-    $metadata.total_ram = [String](GetTotalMemoryInGB ($VMHostsTemp)) + " GB"
+    $metadata.total_ram = (GetTotalMemoryInGB ($VMHostsTemp))
     $metadata.datastore_count = $DatastoresTemp.Count
-    $metadata.total_space =  [String](GetTotalDatastoreDiskSpaceinGB ($DatastoresTemp)) + "GB"
+    $metadata.total_space =  (GetTotalDatastoreDiskSpaceinGB ($DatastoresTemp))
     $metadata.vms_count = $VMTemp.Count
     $metadata.recource_pool_count = $NbOfResourcePoolsTemp.Count
     $metadata.consolidation_ratio = [String][system.math]::floor($VMTemp.Count / $VMHostsTemp.Count) + ":1"
-
-
+    
+    
 	return $metadata
 
 }
@@ -354,13 +353,13 @@ Function CreateVMHostCPUUsageObj ($VMHostsTemp){ # Builds CPU Obj and populates 
 		Write-Host "          " Gathering $_.Name "CPU usage statistics..."
 		$tmp = @{}
 		$tempVMHostAverageCPUUsagePercentage = (GetVMHostAverageCPUUsagePercentage $_)
-
+		
 		$tmp.host = $_.name
 		$tmp.cpu_count = $_.NumCpu
-		$tmp.cur_cpu_usage =  [String](GetVMHostCurrentCPUUsagePercentage $_) + "%"
-		$tmp.avg_cpu_usage = [String]($tempVMHostAverageCPUUSagePercentage) + "%"
+		$tmp.cur_cpu_usage =  [Decimal](GetVMHostCurrentCPUUsagePercentage $_)
+		$tmp.avg_cpu_usage = $tempVMHostAverageCPUUSagePercentage
 		$global:ArrayOfNames += $_.Name
-		$global:ArrayOfValues += ($tempVMHostAverageCPUUSagePercentage)
+		$global:ArrayOfValues += $tempVMHostAverageCPUUSagePercentage
 		$cpu += $tmp
 	}
 
@@ -368,20 +367,20 @@ Function CreateVMHostCPUUsageObj ($VMHostsTemp){ # Builds CPU Obj and populates 
 }
 
 Function CreateVMHostMemoryUsageObj ($VMHostsTemp){ # Builds Memory Obj and populates Arrays used to create chart
-
+	
 	$memory = @()
 
 	$VMHostsTemp | Sort-Object name | ForEach-Object {
 		Write-Host "          " Gathering $_.Name "Memory usage statistics..."
 		$tmp = @{}
 		$tempVMHostAverageMemoryUsagePercentage = (GetVMHostAverageMemoryUsagePercentage $_)
-
+		
 		$tmp.host = $_.name
-		$tmp.total_ram = [String](GetVMHostMemoryinGB $_) + "GB"
-		$tmp.cur_mem_usage =  [String](GetVMHostCurrentMemoryUsagePercentage $_) + "%"
-		$tmp.avg_mem_usage = [String]($tempVMHostAverageMemoryUsagePercentage) + "%"
+		$tmp.total_ram = (GetVMHostMemoryinGB $_)
+		$tmp.cur_mem_usage =  [Decimal](GetVMHostCurrentMemoryUsagePercentage $_)
+		$tmp.avg_mem_usage = $tempVMHostAverageMemoryUsagePercentage
 		$global:ArrayOfNames += $_.Name
-		$global:ArrayOfValues += ($tempVMHostAverageMemoryUsagePercentage)
+		$global:ArrayOfValues += $tempVMHostAverageMemoryUsagePercentage
 		$memory += $tmp
 	}
 
@@ -395,12 +394,12 @@ Function CreateDatastoreUsageObj ($DatastoresTemp){ # Builds Datastore HTML Obj 
 	$DatastoresTemp | Sort-Object name | ForEach-Object {
 		Write-Host "          " Gathering $_.Name "Datastore usage statistics..."
 		$tmp = @{}
-
+		
 		$tmp.name = $_.name
-		$tmp.total_space = [String](GetDatastoreCapacityinGB $_) + "GB"
-		$tmp.cur_disk_usage =  [String](GetDatastoreCurrentDiskSpaceUsagePercentage $_) + "%"
+		$tmp.total_space = (GetDatastoreCapacityinGB $_)
+		$tmp.cur_disk_usage =  (GetDatastoreCurrentDiskSpaceUsagePercentage $_)
 		$tmp.total_vms = (GetNumberofVMsInDatastore $_)
-		$tmp.commitment = [String](GetDatastoreAllocationPercentage $_) + "%"
+		$tmp.commitment = (GetDatastoreAllocationPercentage $_)
 		$global:ArrayOfNames += $_.Name
 		$global:ArrayOfValues += (GetDatastoreCurrentDiskSpaceUsagePercentage $_)
 		$datastore += $tmp
@@ -414,58 +413,57 @@ Function CreateClusterProvisioningPotentialObjs ($ClusterTemp) {
 	Write-Host "          " Gathering Cluster Provisioning Information for Cluster $ClusterTemp.Name
 
 	$prov = @{}
-	$prov.vm_stats = @{}
-	$prov.vm_ra = @{}
+	
 
 	$VMsInClusterTemp = $ClusterTemp | Get-VM
-
+	
 	# Remove biggest host from collection
 	$BiggestHostInCluster = $ClusterTemp | Get-VMHost | Sort-Object MemoryTotalMB -Descending | Select-Object -First 1
 	$VMHostsInClusterMinusBiggest = $ClusterTemp | Get-VMHost | Where-Object {$_.Name -ne $BiggestHostInCluster.Name}
 	$DatastoresInClusterMinusBiggestHosts = $VMHostsInClusterMinusBiggest | Get-Datastore
-
+	
 	$ClusterVMAverageCPUUsage = (GetVMAverageCPUUsage ($VMsInClusterTemp))
 	$ClusterVMAverageMemoryUsage = (GetVMAverageMemoryUsage ($VMsInClusterTemp))
 	$ClusterVMAverageDatastoreUsage = (GetVMAverageDatastoreUsage ($VMsInClusterTemp))
-
+	
 	$AvailableCPUSlotsInCluster = (GetCPUSlotsAvailable $VMHostsInClusterMinusBiggest $ClusterVMAverageCPUUsage)
 	$AvailableMemorySlotsInCluster = (GetMemorySlotsAvailable $VMHostsInClusterMinusBiggest $ClusterVMAverageMemoryUsage)
 	$AvailableDatastoreSlotsInCluster  = (GetDatastoreSlotsAvailable $DatastoresInClusterMinusBiggestHosts $ClusterVMAverageDatastoreUsage)
-
+	
 	$prov.message = "The approximate number of Virtual Machines you can provision safely in this cluster is " + [String](GetVMProvisioningPotential $AvailableCPUSlotsInCluster $AvailableMemorySlotsInCluster $AvailableDatastoreSlotsInCluster)
 
-    $prov.vm_stats.total_vms = $VMsInCluster.Length
-    $prov.vm_stats.avg_cpu_usage = [String]$ClusterVMAverageCPUUsage + "MHz"
-    $prov.vm_stats.avg_mem_usage = [String]$ClusterVMAverageMemoryUsage + "MB"
-    $prov.vm_stats.avg_disk_usage = [String]$ClusterVMAverageDatastoreUsage + "GB"
+    $prov.total_vms = $VMsInCluster.Length
+    $prov.avg_cpu_usage = [system.math]::round($ClusterVMAverageCPUUsage/1000,2) 				#Convert to GHz
+    $prov.avg_mem_usage = [system.math]::round($ClusterVMAverageMemoryUsage/1024,2) 	#Convert to GB
+    $prov.avg_disk_usage = $ClusterVMAverageDatastoreUsage
 
-    $prov.vm_ra.total_cpu_slots = $AvailableCPUSlotsInCluster
-    $prov.vm_ra.total_memory_slots = $AvailableMemorySlotsInCluster
-    $prov.vm_ra.total_disk_slots = $AvailableDatastoreSlotsInCluster
-
-	return $prov
+    $prov.total_cpu_slots = $AvailableCPUSlotsInCluster
+    $prov.total_memory_slots = $AvailableMemorySlotsInCluster
+    $prov.total_disk_slots = $AvailableDatastoreSlotsInCluster
+	
+	return $prov 
  }
-
+ 
 Function CreateClusterResilienceObj ($ClusterTemp) {
 
 	Write-Host "          " Gathering Cluster Resilience Information for Cluster $ClusterTemp.Name
 
 	# Get HA info
-	$HAEnabled = $ClusterTemp | Select-Object HAEnabled; $HAEnabled = $HAEnabled.HAEnabled
-	$ACEnabled = $ClusterTemp | Select-Object HAAdmissionControlEnabled; $ACEnabled = $ACEnabled.HAAdmissionControlEnabled
-	$ACPolicy = "N/A"
+	$HAEnabled = $ClusterTemp | Select-Object HAEnabled; $HAEnabled = $HAEnabled.HAEnabled 
+	$ACEnabled = $ClusterTemp | Select-Object HAAdmissionControlEnabled; $ACEnabled = $ACEnabled.HAAdmissionControlEnabled 
+	$ACPolicy = "N/A" 
 	$HostLossTolerance = 0
-
+	
 	# GET HA Admission Control Policy
 	if ($HAEnabled -and $ACEnabled){
-
+		
 		if ((($ClusterTemp | Select-Object HAFailoverlevel).HAFailoverLevel) -eq 0){ # If protection setting is NOT a # of hosts
-
+		
 			$ClusterView = Get-View -ViewType "ClusterComputeResource" -Filter @{"Name" = $ClusterTemp.Name}
 			$ACPolicyInteger = $ClusterView.configuration.dasConfig.admissionControlpolicy.cpuFailoverResourcesPercent
 			$ACPolicy = [String]$ACPolicyInteger  + " % of resources reserved"
-
-
+			
+			
 			# CHART VALUE PREPARATIONS
 			$ClusterUsedMemory = ($ClusterTemp | Get-VMHost | Measure-Object MemoryUsageMB -Sum).sum
 			$ClusterTotalMemory = ($ClusterTemp | Get-VMHost | Measure-Object MemoryTotalMB -Sum).sum
@@ -473,29 +471,29 @@ Function CreateClusterResilienceObj ($ClusterTemp) {
 			$ClusterUsedMemoryPercentage = [system.math]::floor($ClusterUsedMemory * 100 / $ClusterTotalMemory)
 			$ClusterFreeMemoryPercentage = [system.math]::floor($ClusterFreeMemory * 100 / $ClusterTotalMemory)
 			$ClusterFreeMemoryPercentage = $ClusterFreeMemoryPercentage - $ACPolicyInteger
-
+			
 			$global:ArrayOfNames += "Used"
 			$global:ArrayOfValues += $ClusterUsedMemoryPercentage
-
+			
 			$global:ArrayOfNames += "Free"
 			$global:ArrayOfValues += $ClusterFreeMemoryPercentage
-
+			
 			$global:ArrayOfNames += "HA Admission Control Reservation"
 			$global:ArrayOfValues += $ACPolicyInteger
-
+			
 			# Host Loss Tolerance Calculation
 			$BiggestHostInCluster = $ClusterTemp | Get-VMHost | Sort-Object MemoryTotalMB -Descending | Select-Object -First 1
 			$HAReservedMemory = ($ACPolicyInteger/100) * ($ClusterTemp | Get-VMHost | Measure-Object MemoryTotalMB -Sum).sum
 			$HostLossTolerance = $HAReservedMemory / $BiggestHostInCluster.MemoryTotalMB
 			$HostLossTolerance = [System.Math]::Round($HostLossTolerance,2)
-
-
+			
+			
 		}else{ # If protection setting is a # of hosts
-
+		
 			$ACPolicy =  ($ClusterTemp | Select-Object HAFailoverlevel).HAFailoverLevel
-			$ACPolicy = [String]$ACPolicy  + " host(s) reserved"
+			$ACPolicy = [String]$ACPolicy  + " host(s) reserved"	
 			$HostLossTolerance = ($ClusterTemp | Select-Object HAFailoverlevel).HAFailoverLevel
-		}
+		} 
 	}
 
 
@@ -532,153 +530,189 @@ Function CreateVirtualMachineOSObj ($VMsTemp){ # Builds VM Obj and populates Arr
 	$global:ArrayOfValues += $NumberOfWindowsVMs
 	$global:ArrayOfValues += $NumberOfLinuxVMs
 	$global:ArrayOfValues += $NumberOfOtherVMs
-
+	
 	return $vms
 }
 
 
 ################################################# OUTPUT ##########################################################
 
+Write-Host Step 0/6 - Connecting...
+connect-viserver -Server $vCenterServerName
+
+
 ######################## INVENTORY ############################
 
 Write-Host Step 1/6 - Collecting inventory...
 
+#$serverName = $vCenterServerName -replace "[ .]", "_"
+$serverName = $vCenterServerName
 
-#Start building the JSON Object
-$json.timestamp = [Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s"))
+
+#Start building the JSON Object for Server
+
 $json.description = "VMWare Capacity & Performance Report for " + $vCenterServerName
+$json.servername = $vCenterServerName
+$json.timestamp = [Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s"))
+$json.vtype = "server"
 
-#Populate the Metadata and Hardware Information
-$json.servers = @{}
-$json.servers.$vCenterServerName = @{}
+#Add metadata
+ListVCenterInventory 
 
-$servers = $json.servers.$vCenterServerName
-$servers.metadata = ListVCenterInventory
-
-$servers.hardware = @{}
-$servers.hardware = BuildESXiSoftwareAndHardwareInfoObj ($VMHosts)
+$json.hardware = @{}
+$json.hardware = BuildESXiSoftwareAndHardwareInfoObj ($VMHosts)
 
 
 ######################## vCenter CPU CAPACITY REPORT ############################
 
 Write-Host Step 2/6 - Collecting CPU statistics...
 
-$servers.cpu = @{}
-$servers.cpu = CreateVMHostCPUUsageObj ($VMHosts)
+$json.cpu = @{}
+$json.cpu = CreateVMHostCPUUsageObj ($VMHosts)
 
 # CLEANUP
 ReinitializeArrays
 
 
+
+
+ 
 ######################## vCenter MEMORY CAPACITY REPORT ############################
 
 Write-Host Step 3/6 - Collecting Memory information...
 
-$servers.memory = @{}
-$servers.memory = CreateVMHostMemoryUsageObj ($VMHosts)
+$json.memory = @{}
+$json.memory = CreateVMHostMemoryUsageObj ($VMHosts)
 
 # CLEANUP
 ReinitializeArrays
+
 
 
 ######################## vCenter DATASTORE CAPACITY REPORT ############################
 
 Write-Host Step 4/6 - Collecting Datastore information...
 
-$servers.datastore = @{}
-$servers.datastore = CreateDatastoreUsageObj ($Datastores)
+#$json.datastore = @{}
+#$json.datastore = CreateDatastoreUsageObj ($Datastores)
 
 # CLEANUP
 ReinitializeArrays
-
 
 ######################## vCenter VIRTUAL MACHINE REPORT ############################
 
 Write-Host Step 5/6 - Collecting Virtual Machine information...
 
-$servers.vms = @{}
-$servers.vms =  CreateVirtualMachineOSObj ($VM)
+$json.vm = @{}
+$json.vm =  CreateVirtualMachineOSObj ($VM)
 
 # CLEANUP
 ReinitializeArrays
 
+#Add current JSON Object to send Array
+$send += $json
 
 ########################  PER CLUSTER REPORT ############################
 
 Write-Host Step 6/6 - Collecting Cluster information...
 
-$json.clusters = @{}
-$cluster = $json.clusters
 
 # Loop through all clusters
 ForEach ($ClusterTemp in ($Clusters)){
 
 	$NumberOfVMHostsInCluster = $ClusterTemp | Get-VMHost | Measure-Object
 	$NumberOfVMHostsInCluster = $NumberOfVMHostsInCluster.Count
-
+	
 	If ($NumberOfVMHostsInCluster -gt 1){ #Ignore Clusters with no ESXi hosts in it
+	
+
+		#Resetting JSON object to handle Cluster types
+		$json = @{}
+		$json.servername = $serverName
+		$json.timestamp = [Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s"))
+		$json.vtype = "cluster"
+
 
 		Write-Host "          " Gathering $ClusterTemp.Name "usage statistics..."
-
-
+		
+		
 		$VMHostsInCluster = $ClusterTemp | Get-VMHost
 		$DatastoresInCluster = $ClusterTemp | Get-VMHost | Get-Datastore
 		$VMsInCluster = $ClusterTemp | Get-VM
 
-		$vCenterClusterName = $ClusterTemp.Name.ToLower() -replace " ", "_"
+		#$vCenterClusterName = $ClusterTemp.Name.ToLower() -replace "[ .] ", "_"
 
-		$cluster.$vCenterClusterName = @{}
-
+		$json.clustername = $ClusterTemp.Name.ToLower()
+		
 		################################# PER CLUSTER INVENTORY  ##########################
-		$cluster.$vCenterClusterName.hardware = @{}
-		$cluster.$vCenterClusterName.hardware = ListClusterInventory ($ClusterTemp)
+		$json.hardware = @{}
+		$json.hardware = ListClusterInventory ($ClusterTemp)
 
-
+		
 		################################# PER CLUSTER CPU REPORT ##########################
-		$cluster.$vCenterClusterName.hardware = @{}
-		$cluster.$vCenterClusterName.hardware = CreateVMHostCPUUsageObj ($VMHostsInCluster)
+		$json.cpu = @{}
+		$json.cpu = CreateVMHostCPUUsageObj ($VMHostsInCluster)
 
 		# CLEANUP
 		ReinitializeArrays
+		
 
 		################################# PER CLUSTER MEMORY REPORT ##########################
-		$cluster.$vCenterClusterName.memory = @{}
-		$cluster.$vCenterClusterName.memory = CreateVMHostMemoryUsageObj ($VMHostsInCluster)
-
+		$json.memory = @{}
+		$json.memory = CreateVMHostMemoryUsageObj ($VMHostsInCluster)
+		
 		# CLEANUP
 		ReinitializeArrays
+		
 
 		################################# PER CLUSTER DATASTORE REPORT ##########################
-		$cluster.$vCenterClusterName.datastore = @{}
-		$cluster.$vCenterClusterName.datastore = CreateDatastoreUsageObj ($DatastoresInCluster)
+		$json.datastore = @{}
+		$json.datastore = CreateDatastoreUsageObj ($DatastoresInCluster)
 
 		# CLEANUP
 		ReinitializeArrays
-
-
+		
+		
 		################################# PER CLUSTER PROVISONING POTENTIAL REPORT ##########################
-		$cluster.$vCenterClusterName.provisioning = @{}
-		$cluster.$vCenterClusterName.provisioning = CreateClusterProvisioningPotentialObjs ($ClusterTemp)
-
-
-
-
-		################################# PER CLUSTER RESILIENCE REPORT ##########################
-		$cluster.$vCenterClusterName.resilency = @{}
-		$cluster.$vCenterClusterName.resilency = CreateClusterResilienceObj ($ClusterTemp)
+		$json.provisioning = @{}
+		$json.provisioning = CreateClusterProvisioningPotentialObjs ($ClusterTemp)
 
 		# CLEANUP
 		ReinitializeArrays
+				
+		
+		################################# PER CLUSTER RESILIENCE REPORT ##########################
+		$json.resilency = @{}
+		$json.resilency = CreateClusterResilienceObj ($ClusterTemp)
+			
+		# CLEANUP
+		ReinitializeArrays
+		
 
-
+		#Add current JSON Object to send Array
+		$send += $json
+		
 	}
+
+	
+
 }
+
+Write-Host Step 7/6 - Disconnecting...
+disconnect-viserver -Server $vCenterServerName -confirm $false
 
 
 ########################### Outpu JSON #################################
-Write-Output $json | ConvertTo-Json -Depth 5 | Out-File ((Get-Location).Path + "\report.json")
-Write-Host "Report has exported to " + ((Get-Location).Path + "\report.json")
+$out = $send | ConvertTo-Json -Depth 5
 
+#Uncomment whatever you'd like to happen
 
+#Write-Output $out | Out-File ((Get-Location).Path + "\report.json")
+#Write-Host "Report has exported to " + ((Get-Location).Path + "\report.json")
+
+#Invoke-WebRequest -UseBasicParsing http://XXX.XXX.XXX.XXX:8080 -ContentType "application/json" -Method POST -Body $out
+
+#Write-Output "Sent to http://XXX.XXX.XXX.XXX:8080"
+#Write-Output $out
 
 Exit
