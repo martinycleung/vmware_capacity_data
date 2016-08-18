@@ -564,16 +564,16 @@ Function pullData ($VMsTemp, $cn){
 		if ($cn -eq $null) {
 			####### HARDWARE
 			Write-Host "             " Gathering "Hardware Statistics..."
-			$tmp.host = $_.Name
 			$tmp.model = $_.Manufacturer + " " + $_.Model
 			$tmp.cpu_count = $_.NumCpu
 			$tmp.total_ram = (GetTotalMemoryInGB ($_))
 			$tmp.version = [String]$_.Version + " Build " + $_.Build
 			$tmp.uptime = ($_ | Get-View | select @{N="Uptime"; E={(Get-Date) - $_.Summary.Runtime.BootTime}}).Uptime.Days
-			$tmp.vtype = "host"
 		} else {
 			$tmp.cluster_name = $cn
 		}
+
+		$tmp.vtype = "host"
 		
 		####### CPU
 		Write-Host "             " Gathering "CPU Statistics..."
@@ -733,10 +733,6 @@ ForEach ($ClusterTemp in ($Clusters)){
 	
 		# CLEANUP
 		ReinitializeArrays
-		
-
-		#Add current JSON Object to send Array
-		$send += $json
 		
 	}
 
