@@ -126,3 +126,81 @@ This modifies the output to create a JSON object, output resembles
 ```
 The JSON object does not contain comments, this example has been annotated for clarity
 
+## Elasticsearch version output
+
+```
+[{
+     "total_ram":  869,
+     "dc_count":  1,
+     "description":  "VMWare Capacity \u0026 Performance Report for SERVER_NAME",
+     "server_name":  "SERVER_ADDRESS",
+     "version":  null,
+     "total_cpu":  231,
+     "vtype":  "server",
+     "template_count":  4,
+     "vms_count":  105,
+     "consolidation_ratio":  "9:1",
+     "vm":  {
+                "win":  7,
+                "other":  51,
+                "total":  105,
+                "nix":  47
+            },
+     "recource_pool_count":  3,
+     "timestamp":  1471531206,
+     "cluster_count":  12,
+     "cpu_count":  332,
+     "host_count":  50
+ },
+ {
+    "model":  "1001001101",
+    "cur_cpu_usage":  0.02,
+    "avg_mem_usage":  0.46,
+    "version":  "5.1.0 Build 2323236",
+    "avg_cpu_usage":  0.02,
+    "server_name":  "SERVER_NAME",
+    "uptime":  40,
+    "total_ram":  48,
+    "host":  "127.0.0.1",
+    "cpu_count":  8,
+    "cur_mem_usage":  0.46,
+    "vtype":  "host"
+},{
+    "total_vms":  7,
+    "total_space":  1393,
+    "cur_disk_usage":  0.26,
+    "server_name":  "SERVER_NAME",
+    "name":  "DISK_NAME",
+    "commitment":  0.28,
+    "vtype":  "datastore"
+},{
+    "cluster_name":  "CLUSTER_1",
+    "total_vms":  1,
+    "total_space":  106,
+    "cur_disk_usage":  0.51,
+    "server_name":  "SERVER_NAME",
+    "name":  "DISK_NAME",
+    "commitment":  0.51,
+    "vtype":  "datastore"
+},{
+    "message":  "The approximate number of Virtual Machines you can provision safely in this cluster is 1. Memory is your limiting factor.",
+    "total_vms":  11,
+    "avg_mem_usage":  8.59,
+    "avg_disk_usage":  56,
+    "total_cpu_slots":  380,
+    "server_name":  "SERVER_NAME",
+    "total_disk_slots":  18,
+    "avg_cpu_usage":  0.04,
+    "total_memory_slots":  1,
+    "cluster_name":  "CLUSTER_NAME",
+    "vtype":  "provision"
+},
+{
+    "message":  "This cluster can survive the loss of approximately 0 host(s)",
+    "ha_enabled":  "false",
+    "server_name":  "SERVER_NAME",
+    "cluster_name":  "CLUSTER_NAME",
+    "ace_policy":  "N/A",
+    "ace_enabled":  "true",
+    "vtype":  "resiliency"
+}]
