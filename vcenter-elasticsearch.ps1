@@ -15,7 +15,7 @@
 # July 2013			Bugfixes, Added Cluster Resilience & Provisionning Potential reports, other minor code adjustements
 # January 2014		Added Consolidation ratio, ESXi Hardware & Software Information table, vCenter version, Print Computer name and script version
 # May 2015			Fixed issue with Cluster charts not appearing in e-mail report, cause by a space in the cluster name
-# August 2016  Rewrote script to output data to Elasticsearch
+# August 2016  		Rewrote script to output data to Elasticsearch
 ################################ CONSTANTS ######################################
 
 Write-Host Loading...
@@ -560,6 +560,7 @@ Function pullData ($VMsTemp, $cn){
 
 		$tmp.server_name = $vCenterServerName
 
+
 		if ($cn -eq $null) {
 			####### HARDWARE
 			Write-Host "             " Gathering "Hardware Statistics..."
@@ -641,9 +642,9 @@ $send += $json
 
 ######################## HARDWARE BY HOST ############################
 
-Write-Host Step 1/ - Collecting Hardware information...
+#Write-Host Step 1/ - Collecting Hardware information...
 
-$send += BuildESXiSoftwareAndHardwareInfoObj $VMHosts
+#$send += BuildESXiSoftwareAndHardwareInfoObj $VMHosts
 
 
 ######################## DETAILS BY HOST ############################
