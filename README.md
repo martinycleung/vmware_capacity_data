@@ -1,9 +1,11 @@
 #PowerCLI script for vSphere capacity planning
 
 First created by Marc Vincent Davoli and released in the VMWare forum
-[https://communities.vmware.com/thread/467442?start=45&tstart=0](https://communities.vmware.com)
+[https://communities.vmware.com](https://communities.vmware.com/thread/467442?start=45&tstart=0)
 
-This script does take advantage of storing the login credentials in an XML File as suggested [https://communities.vmware.com/message/2487008#2487008] here
+These scripts assume you have installed the VMWare CLI
+
+This script does take advantage of storing the login credentials in an XML File as suggested [here](https://communities.vmware.com/message/2487008#2487008)
 
 `New-VICredentialStoreItem -Host "vCenter1" -User "domain\useracnt" -Password "password"`
 
