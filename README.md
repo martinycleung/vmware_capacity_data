@@ -1,9 +1,17 @@
 #PowerCLI script for vSphere capacity planning
 
 First created by Marc Vincent Davoli and released in the VMWare forum
-https://communities.vmware.com/thread/467442?start=45&tstart=0
+[https://communities.vmware.com/thread/467442?start=45&tstart=0](https://communities.vmware.com)
 
-This modifies the output to create a JSON object, output resembles
+This script does take advantage of storing the login credentials in an XML File as suggested [https://communities.vmware.com/message/2487008#2487008] here
+
+`New-VICredentialStoreItem -Host "vCenter1" -User "domain\useracnt" -Password "password"`
+
+You will have to run the above command to ensure that the script works properly. 
+
+However, I did not leave the Multiple Server portion intact 
+
+These scripts modifiy the output to create a JSON object, output resembles
 
 ```
 [
