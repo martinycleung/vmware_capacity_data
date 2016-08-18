@@ -128,6 +128,12 @@ The JSON object does not contain comments, this example has been annotated for c
 
 ## Elasticsearch version output
 
+I flattened the JSON output a bit to be friendlier for Elasticsearch consumption
+
+
+\*The measurements haven't changed
+
+
 ```
 [{
      "total_ram":  869,
