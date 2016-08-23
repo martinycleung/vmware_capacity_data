@@ -564,6 +564,7 @@ Function pullData ($VMsTemp, $cn){
 		if ($cn -eq $null) {
 			####### HARDWARE
 			Write-Host "             " Gathering "Hardware Statistics..."
+			$tmp.host = $_.name
 			$tmp.model = $_.Manufacturer + " " + $_.Model
 			$tmp.cpu_count = $_.NumCpu
 			$tmp.total_ram = (GetTotalMemoryInGB ($_))
